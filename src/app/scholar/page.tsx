@@ -17,7 +17,7 @@ import React from 'react';
 const attendanceFormSchema = z.object({
   school: z.string({ required_error: 'Please select a school.' }).min(1, 'Please select a school.'),
   scholarId: z.string().min(1, 'Please enter your name or scholar code.'),
-  event: z.string({ required_error: 'Please select an event.' }).min(1, 'Please select an event.'),
+  eventId: z.string({ required_error: 'Please select an event.' }).min(1, 'Please select an event.'),
 });
 
 type AttendanceFormValues = z.infer<typeof attendanceFormSchema>;
@@ -40,7 +40,7 @@ export default function ScholarPage() {
     defaultValues: {
       school: '',
       scholarId: '',
-      event: '',
+      eventId: '',
     },
   });
 
@@ -127,7 +127,7 @@ export default function ScholarPage() {
 
               <FormField
                 control={form.control}
-                name="event"
+                name="eventId"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
                     <FormLabel>Event</FormLabel>

@@ -23,7 +23,7 @@ export function Combobox({ options, value, onChange, placeholder, emptyMessage }
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="outline" role="combobox" aria-expanded={open} className="w-full justify-between">
-          {value ? options.find((option) => option.value === value)?.label : placeholder ?? 'Select option...'}
+          {value ? options.find((option) => option.value.toLowerCase() === value.toLowerCase())?.label : placeholder ?? 'Select option...'}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -36,9 +36,10 @@ export function Combobox({ options, value, onChange, placeholder, emptyMessage }
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
-                  value={option.value}
-                  onSelect={(currentValue) => {
-                    onChange(currentValue);
+                  value={option.label}
+                  onSelect={(currentLabel) => {
+                    const selectedValue = options.find(o => o.label.toLowerCase() === currentLabel.toLowerCase())?.value || '';
+                    onChange(selectedValue);
                     setOpen(false);
                   }}
                 >

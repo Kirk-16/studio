@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { schools, mockEvents, mockScholars } from '@/lib/data';
 import Link from 'next/link';
-import { ArrowLeft, BookUser } from 'lucide-react';
+import { ArrowLeft, BookUser, LogIn } from 'lucide-react';
 import { Combobox } from '@/components/ui/combobox';
 import React from 'react';
 
@@ -59,98 +59,107 @@ export default function ScholarPage() {
 
 
   function onSubmit(data: AttendanceFormValues) {
-    console.log(data);
-    // In a real app, you would check if the scholar is already logged in for this event.
-    const isLoggingIn = true; // Placeholder
+    const scholar = mockScholars.find(s => s.id === data.scholarId);
+    const event = mockEvents.find(e => e.id === data.eventId);
+
     toast({
-      title: 'Success!',
-      description: `You have successfully logged ${isLoggingIn ? 'in' : 'out'}.`,
+      title: 'Attendance Logged!',
+      description: `${scholar?.firstName} ${scholar?.surname} has successfully logged in for ${event?.name}.`,
     });
     form.reset();
   }
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-secondary p-4 relative">
-        <Button asChild variant="ghost" className="absolute top-4 left-4">
+    <div className="relative min-h-screen w-full bg-gradient-to-br from-background via-secondary to-background">
+      <div className="absolute top-0 left-0 right-0 h-[300px] bg-primary/10"></div>
+      <main className="relative flex min-h-screen w-full flex-col items-center justify-center p-4">
+        <Button asChild variant="ghost" className="absolute top-6 left-6 text-primary-foreground hover:text-primary-foreground/80">
             <Link href="/"><ArrowLeft className="mr-2 h-4 w-4" />Back to Home</Link>
         </Button>
-      <Card className="w-full max-w-lg clay-card">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Scholar Attendance</CardTitle>
-          <CardDescription>Log your attendance to record your service hours.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="school"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>School</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value} defaultValue="">
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select your school" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {schools.map((school) => (
-                          <SelectItem key={school} value={school}>
-                            {school}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+        <Card className="w-full max-w-2xl clay-card">
+          <CardHeader>
+            <div className="flex flex-col items-center text-center">
+              <div className="mb-4 rounded-full bg-primary p-4 text-primary-foreground">
+                <LogIn className="h-8 w-8" />
+              </div>
+              <CardTitle className="text-3xl font-bold">Attendance Portal</CardTitle>
+              <CardDescription className="mt-2 text-lg">Log your attendance to record your service hours.</CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-2">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="school"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>1. Select Your School</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value} defaultValue="">
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select your school" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {schools.map((school) => (
+                            <SelectItem key={school} value={school}>
+                              {school}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="scholarId"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Name or Scholar Code</FormLabel>
-                     <Combobox
-                        options={filteredScholarOptions}
-                        value={field.value}
-                        onChange={field.onChange}
-                        placeholder="Search for your name..."
-                        emptyMessage="No scholar found."
-                    />
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="scholarId"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>2. Find Your Name</FormLabel>
+                       <Combobox
+                          options={filteredScholarOptions}
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="Search for your name..."
+                          emptyMessage="No scholar found. Select a school first."
+                          disabled={!selectedSchool}
+                      />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="eventId"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Event</FormLabel>
-                    <Combobox
-                        options={eventOptions}
-                        value={field.value}
-                        onChange={field.onChange}
-                        placeholder="Search for an event..."
-                        emptyMessage="No event found."
-                    />
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="eventId"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>3. Select the Event</FormLabel>
+                      <Combobox
+                          options={eventOptions}
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="Search for an event..."
+                          emptyMessage="No event found."
+                      />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <Button type="submit" className="w-full" size="lg">Submit Attendance</Button>
-            </form>
-          </Form>
-        </CardContent>
-        <CardFooter className="flex flex-col items-center justify-center text-center">
-            <p className="text-sm text-muted-foreground mt-4 flex items-center gap-2"><BookUser className="h-4 w-4"/>Your total accumulated hours will be updated upon successful log out.</p>
-        </CardFooter>
-      </Card>
+                <Button type="submit" className="w-full md:col-span-2" size="lg">Submit Attendance</Button>
+              </form>
+            </Form>
+          </CardContent>
+          <CardFooter>
+            <p className="w-full text-center text-sm text-muted-foreground flex items-center justify-center gap-2 pt-4"><BookUser className="h-4 w-4"/>Your total hours will be updated upon successful log out.</p>
+          </CardFooter>
+        </Card>
+      </main>
     </div>
   );
 }

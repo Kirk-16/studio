@@ -14,16 +14,23 @@ interface ComboboxProps {
   onChange: (value: string) => void;
   placeholder?: string;
   emptyMessage?: string;
+  disabled?: boolean;
 }
 
-export function Combobox({ options, value, onChange, placeholder, emptyMessage }: ComboboxProps) {
+export function Combobox({ options, value, onChange, placeholder, emptyMessage, disabled }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" role="combobox" aria-expanded={open} className="w-full justify-between">
-          {value ? options.find((option) => option.value.toLowerCase() === value.toLowerCase())?.label : placeholder ?? 'Select option...'}
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-full justify-between"
+          disabled={disabled}
+        >
+          {value ? options.find((option) => option.value === value)?.label : placeholder ?? 'Select option...'}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -38,7 +45,8 @@ export function Combobox({ options, value, onChange, placeholder, emptyMessage }
                   key={option.value}
                   value={option.value}
                   onSelect={(currentValue) => {
-                    onChange(currentValue === value ? '' : currentValue);
+                    const newValue = currentValue === value ? '' : currentValue;
+                    onChange(newValue);
                     setOpen(false);
                   }}
                 >

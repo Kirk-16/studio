@@ -111,7 +111,15 @@ export function EventCalendar({ initialEvents }: { initialEvents: Event[] }) {
             const dayEvents = events.filter(event => isSameDay(event.date, day));
             return (
               <div key={day.toString()} className={cn("border-r border-b p-2 h-32 flex flex-col", { 'bg-blue-50 dark:bg-blue-900/20': isToday(day) })}>
-                <time dateTime={format(day, 'yyyy-MM-dd')} className={cn("font-semibold", { "text-primary": isToday(day) })}>{format(day, 'd')}</time>
+                <time
+                  dateTime={format(day, 'yyyy-MM-dd')}
+                  className={cn("font-semibold", {
+                    "text-white bg-primary rounded-full w-8 h-8 flex items-center justify-center": isToday(day),
+                    "text-primary": dayEvents.length > 0 && !isToday(day)
+                  })}
+                >
+                  {format(day, 'd')}
+                </time>
                 <div className="flex-grow overflow-y-auto mt-1 space-y-1">
                     {dayEvents.map(event => (
                         <div key={event.id} onClick={() => handleEdit(event)} className="bg-primary/10 text-primary p-1 rounded-md text-xs cursor-pointer hover:bg-primary/20 truncate">

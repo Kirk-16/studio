@@ -6,13 +6,13 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { schools, mockEvents } from '@/lib/data';
+import { schools, mockEvents, mockScholars } from '@/lib/data';
 import Link from 'next/link';
 import { ArrowLeft, BookUser } from 'lucide-react';
 import { Combobox } from '@/components/ui/combobox';
+import React from 'react';
 
 const attendanceFormSchema = z.object({
   school: z.string({ required_error: 'Please select a school.' }).min(1, 'Please select a school.'),
@@ -27,6 +27,12 @@ const eventOptions = mockEvents.map(event => ({
     label: event.name,
 }));
 
+const scholarOptions = mockScholars.map(scholar => ({
+    value: scholar.id,
+    label: `${scholar.firstName} ${scholar.surname} (${scholar.scholarCode})`,
+    school: scholar.school,
+}));
+
 export default function ScholarPage() {
   const { toast } = useToast();
   const form = useForm<AttendanceFormValues>({
@@ -37,6 +43,20 @@ export default function ScholarPage() {
       event: '',
     },
   });
+
+  const selectedSchool = form.watch('school');
+
+  const filteredScholarOptions = React.useMemo(() => {
+    if (!selectedSchool) {
+        return [];
+    }
+    return scholarOptions.filter(scholar => scholar.school === selectedSchool);
+  }, [selectedSchool]);
+
+  React.useEffect(() => {
+    form.resetField('scholarId');
+  }, [selectedSchool, form]);
+
 
   function onSubmit(data: AttendanceFormValues) {
     console.log(data);
@@ -91,11 +111,15 @@ export default function ScholarPage() {
                 control={form.control}
                 name="scholarId"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="flex flex-col">
                     <FormLabel>Name or Scholar Code</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., Juan Dela Cruz or STI-2024-001" {...field} />
-                    </FormControl>
+                     <Combobox
+                        options={filteredScholarOptions}
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Search for your name..."
+                        emptyMessage="No scholar found."
+                    />
                     <FormMessage />
                   </FormItem>
                 )}

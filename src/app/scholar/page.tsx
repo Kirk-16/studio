@@ -28,6 +28,11 @@ export default function ScholarPage() {
   const { toast } = useToast();
   const form = useForm<AttendanceFormValues>({
     resolver: zodResolver(attendanceFormSchema),
+    defaultValues: {
+      school: '',
+      scholarId: '',
+      event: '',
+    },
   });
 
   function onSubmit(data: AttendanceFormValues) {
@@ -66,7 +71,7 @@ export default function ScholarPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>School</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value} defaultValue="">
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select your school" />
@@ -105,7 +110,7 @@ export default function ScholarPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Event</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value} defaultValue="">
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select the event you are joining" />

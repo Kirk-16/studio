@@ -8,10 +8,10 @@ export default function Home() {
     <main className="flex min-h-screen w-full flex-col items-center justify-center bg-gradient-to-br from-background to-secondary p-4">
       <div className="text-center mb-12">
         <h1 className="text-4xl md:text-5xl font-bold text-primary mb-2">
-          BS Scholars Attendance Tracker
+          Batang Surigaonon Scholars Club Attendance Monitoring System
         </h1>
         <p className="text-muted-foreground text-lg">
-          Batang Surigaonon Scholars Club Attendance Monitoring System
+          Log attendance, track hours, and manage scholar activities.
         </p>
       </div>
 

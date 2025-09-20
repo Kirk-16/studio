@@ -11,8 +11,8 @@ const ptSans = PT_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'BS Scholars Attendance Tracker',
-  description: 'Batang Surigaonon Scholars Club Attendance Monitoring System',
+  title: 'Batang Surigaonon Scholars Club Attendance Monitoring System',
+  description: 'An attendance monitoring system for the Batang Surigaonon Scholars Club.',
 };
 
 export default function RootLayout({

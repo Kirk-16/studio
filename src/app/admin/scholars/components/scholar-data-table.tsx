@@ -239,7 +239,7 @@ export function ScholarDataTable({ data }: { data: Scholar[] }) {
                 <FormField name="accumulatedHours" control={form.control} render={({ field }) => (
                      <FormItem>
                         <FormLabel>Accumulated Hours</FormLabel>
-                        <FormControl><Input type="number" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl>
+                        <FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? 0 : parseFloat(e.target.value))} /></FormControl>
                         <FormMessage />
                     </FormItem>
                 )} />

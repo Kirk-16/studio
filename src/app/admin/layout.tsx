@@ -12,8 +12,7 @@ import {
   SidebarInset,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Home, Users, Calendar, Settings, LogOut, LayoutGrid } from 'lucide-react';
+import { Home, Users, Calendar } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Logo } from '@/components/logo';
@@ -65,11 +64,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <header className="flex items-center justify-between p-4 border-b h-16 bg-background/80 backdrop-blur-sm sticky top-0 z-10">
             <SidebarTrigger/>
             <div className="flex items-center gap-4">
-                <p className="font-semibold">Admin Panel</p>
-                <Avatar className="h-9 w-9">
-                  <AvatarImage src="https://picsum.photos/seed/admin/100/100" alt="Admin" data-ai-hint="person face" />
-                  <AvatarFallback>A</AvatarFallback>
-                </Avatar>
+                <p className="font-semibold">Admin View</p>
             </div>
         </header>
         <main className="p-4 md:p-6 lg:p-8">{children}</main>

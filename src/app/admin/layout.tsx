@@ -15,7 +15,6 @@ import {
 import { Home, Users, Calendar } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Logo } from '@/components/logo';
 import React, { useEffect, useState } from 'react';
 
 function ClientOnly({ children }: { children: React.ReactNode }) {
@@ -46,10 +45,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <SidebarProvider>
         <Sidebar>
             <SidebarHeader>
-            <div className="flex items-center gap-2">
-                <Logo className="w-8 h-8" />
-                <span className="text-lg font-semibold">BS Scholars</span>
-            </div>
+              <SidebarTrigger/>
             </SidebarHeader>
             <SidebarContent>
             <SidebarMenu>
@@ -80,9 +76,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </Sidebar>
         <SidebarInset>
             <header className="flex items-center justify-between p-4 border-b h-16 bg-background/80 backdrop-blur-sm sticky top-0 z-10">
-                <SidebarTrigger/>
                 <div className="flex items-center gap-4">
-                    <p className="font-semibold">Admin View</p>
+                  <SidebarTrigger className="md:hidden"/>
+                  <p className="font-semibold">Admin View</p>
                 </div>
             </header>
             <main className="p-4 md:p-6 lg:p-8">{children}</main>

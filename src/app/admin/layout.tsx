@@ -22,7 +22,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
 
   const navItems = [
-    { href: '/admin', label: 'Dashboard', icon: LayoutGrid },
     { href: '/admin/scholars', label: 'Scholars', icon: Users },
     { href: '/admin/events', label: 'Events', icon: Calendar },
   ];
@@ -42,7 +41,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <SidebarMenuItem key={item.href}>
                 <Link href={item.href} legacyBehavior passHref>
                   <SidebarMenuButton
-                    isActive={pathname === item.href}
+                    isActive={pathname.startsWith(item.href)}
                     tooltip={item.label}
                   >
                     <item.icon />

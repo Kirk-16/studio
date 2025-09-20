@@ -72,6 +72,11 @@ export function ScholarDataTable({ data }: { data: Scholar[] }) {
     }
   });
 
+  // Keep the local state in sync with parent component's data prop
+  React.useEffect(() => {
+    setScholars(data);
+  }, [data]);
+
   const handleAdd = () => {
     setSelectedScholar(null);
     form.reset({ 
@@ -127,6 +132,7 @@ export function ScholarDataTable({ data }: { data: Scholar[] }) {
         return;
     }
     const year = new Date().getFullYear();
+    // Note: In a real app, you might want a more robust way to get all scholars, not just the currently filtered ones.
     const schoolScholars = scholars.filter(s => s.school === school);
     const newId = (schoolScholars.length + 1).toString().padStart(3, '0');
     const code = `${school}-${year}-${newId}`;
@@ -134,7 +140,7 @@ export function ScholarDataTable({ data }: { data: Scholar[] }) {
   }
 
   const filteredScholars = scholars.filter((scholar) =>
-    `${scholar.firstName} ${scholar.surname} ${scholar.scholarCode} ${scholar.school}`
+    `${scholar.firstName} ${scholar.surname} ${scholar.scholarCode}`
       .toLowerCase()
       .includes(searchTerm.toLowerCase())
   );
@@ -145,7 +151,7 @@ export function ScholarDataTable({ data }: { data: Scholar[] }) {
         <div className="relative w-full max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"/>
             <Input
-            placeholder="Search scholars..."
+            placeholder="Search scholars in this school..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -159,18 +165,22 @@ export function ScholarDataTable({ data }: { data: Scholar[] }) {
             <TableRow>
               <TableHead>Surname</TableHead>
               <TableHead>First Name</TableHead>
-              <TableHead>School</TableHead>
               <TableHead>Scholar Code</TableHead>
               <TableHead className="text-right">Accumulated Hours</TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredScholars.map((scholar) => (
+            {filteredScholars.length === 0 ? (
+                <TableRow>
+                    <TableCell colSpan={5} className="h-24 text-center">
+                        No scholars found.
+                    </TableCell>
+                </TableRow>
+            ) : filteredScholars.map((scholar) => (
               <TableRow key={scholar.id}>
                 <TableCell className="font-medium">{scholar.surname}</TableCell>
                 <TableCell>{scholar.firstName}</TableCell>
-                <TableCell>{scholar.school}</TableCell>
                 <TableCell>{scholar.scholarCode}</TableCell>
                 <TableCell className="text-right font-semibold">{scholar.accumulatedHours}</TableCell>
                 <TableCell>

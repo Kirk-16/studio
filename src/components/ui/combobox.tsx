@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Input } from './input';
 
 interface ComboboxProps {
   options: { label: string; value: string }[];
@@ -19,6 +20,13 @@ interface ComboboxProps {
 
 export function Combobox({ options, value, onChange, placeholder, emptyMessage, disabled }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
+  const [search, setSearch] = React.useState('');
+
+  const selectedLabel = options.find((option) => option.value === value)?.label;
+
+  const filteredOptions = search
+    ? options.filter((option) => option.label.toLowerCase().includes(search.toLowerCase()))
+    : options;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -30,23 +38,29 @@ export function Combobox({ options, value, onChange, placeholder, emptyMessage, 
           className="w-full justify-between"
           disabled={disabled}
         >
-          {value ? options.find((option) => option.value === value)?.label : placeholder ?? 'Select option...'}
+          {value ? selectedLabel : placeholder ?? 'Select option...'}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-        <Command>
-          <CommandInput placeholder={placeholder ?? 'Search...'} />
+        <Command shouldFilter={false}>
+          <CommandInput asChild>
+             <Input
+                placeholder={placeholder ?? 'Search...'}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="h-9"
+              />
+          </CommandInput>
           <CommandList>
             <CommandEmpty>{emptyMessage ?? 'No options found.'}</CommandEmpty>
             <CommandGroup>
-              {options.map((option) => (
+              {filteredOptions.map((option) => (
                 <CommandItem
                   key={option.value}
                   value={option.value}
                   onSelect={(currentValue) => {
-                    const newValue = currentValue === value ? '' : currentValue;
-                    onChange(newValue);
+                    onChange(currentValue === value ? '' : currentValue);
                     setOpen(false);
                   }}
                 >

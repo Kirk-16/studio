@@ -10,28 +10,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { schools, mockEvents, mockScholars } from '@/lib/data';
 import Link from 'next/link';
-import { ArrowLeft, BookUser, LogIn } from 'lucide-react';
-import { Combobox } from '@/components/ui/combobox';
+import { ArrowLeft, BookUser } from 'lucide-react';
 import React from 'react';
 
 const attendanceFormSchema = z.object({
   school: z.string({ required_error: 'Please select a school.' }).min(1, 'Please select a school.'),
-  scholarId: z.string().min(1, 'Please enter your name or scholar code.'),
+  scholarId: z.string().min(1, 'Please select your name.'),
   eventId: z.string({ required_error: 'Please select an event.' }).min(1, 'Please select an event.'),
 });
 
 type AttendanceFormValues = z.infer<typeof attendanceFormSchema>;
-
-const eventOptions = mockEvents.map(event => ({
-    value: event.id,
-    label: event.name,
-}));
-
-const scholarOptions = mockScholars.map(scholar => ({
-    value: scholar.id,
-    label: `${scholar.firstName} ${scholar.surname} (${scholar.scholarCode})`,
-    school: scholar.school,
-}));
 
 export default function ScholarPage() {
   const { toast } = useToast();
@@ -46,11 +34,11 @@ export default function ScholarPage() {
 
   const selectedSchool = form.watch('school');
 
-  const filteredScholarOptions = React.useMemo(() => {
+  const filteredScholars = React.useMemo(() => {
     if (!selectedSchool) {
         return [];
     }
-    return scholarOptions.filter(scholar => scholar.school === selectedSchool);
+    return mockScholars.filter(scholar => scholar.school === selectedSchool);
   }, [selectedSchool]);
 
   React.useEffect(() => {
@@ -62,6 +50,7 @@ export default function ScholarPage() {
     const scholar = mockScholars.find(s => s.id === data.scholarId);
     const event = mockEvents.find(e => e.id === data.eventId);
 
+    // This is a mock submission. In a real app, you'd check if the user is logging in or out.
     toast({
       title: 'Attendance Logged!',
       description: `${scholar?.firstName} ${scholar?.surname} has successfully logged in for ${event?.name}.`,
@@ -71,29 +60,24 @@ export default function ScholarPage() {
 
   return (
     <div className="relative min-h-screen w-full bg-gradient-to-br from-background via-secondary to-background">
-      <div className="absolute top-0 left-0 right-0 h-[300px] bg-primary/10"></div>
-      <main className="relative flex min-h-screen w-full flex-col items-center justify-center p-4">
-        <Button asChild variant="ghost" className="absolute top-6 left-6 text-primary-foreground hover:text-primary-foreground/80">
+       <div className="absolute top-0 left-0 right-0 h-[300px] bg-primary/10"></div>
+       <main className="relative flex min-h-screen w-full flex-col items-center justify-center p-4">
+        <Button asChild variant="ghost" className="absolute top-6 left-6 text-primary hover:text-primary/80">
             <Link href="/"><ArrowLeft className="mr-2 h-4 w-4" />Back to Home</Link>
         </Button>
-        <Card className="w-full max-w-2xl clay-card">
-          <CardHeader>
-            <div className="flex flex-col items-center text-center">
-              <div className="mb-4 rounded-full bg-primary p-4 text-primary-foreground">
-                <LogIn className="h-8 w-8" />
-              </div>
-              <CardTitle className="text-3xl font-bold">Attendance Portal</CardTitle>
-              <CardDescription className="mt-2 text-lg">Log your attendance to record your service hours.</CardDescription>
-            </div>
+        <Card className="w-full max-w-md clay-card">
+          <CardHeader className="text-center">
+            <CardTitle className="text-3xl font-bold">Scholar Attendance</CardTitle>
+            <CardDescription className="mt-2 text-lg">Log your attendance to record your service hours.</CardDescription>
           </CardHeader>
-          <CardContent className="pt-2">
+          <CardContent>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <FormField
                   control={form.control}
                   name="school"
                   render={({ field }) => (
-                    <FormItem className="md:col-span-2">
+                    <FormItem>
                       <FormLabel>1. Select Your School</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value} defaultValue="">
                         <FormControl>
@@ -118,16 +102,22 @@ export default function ScholarPage() {
                   control={form.control}
                   name="scholarId"
                   render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel>2. Find Your Name</FormLabel>
-                       <Combobox
-                          options={filteredScholarOptions}
-                          value={field.value}
-                          onChange={field.onChange}
-                          placeholder="Search for your name..."
-                          emptyMessage="No scholar found. Select a school first."
-                          disabled={!selectedSchool}
-                      />
+                    <FormItem>
+                      <FormLabel>2. Select Your Name</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value} disabled={!selectedSchool}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select your name" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {filteredScholars.map((scholar) => (
+                            <SelectItem key={scholar.id} value={scholar.id}>
+                              {`${scholar.firstName} ${scholar.surname} (${scholar.scholarCode})`}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -137,21 +127,28 @@ export default function ScholarPage() {
                   control={form.control}
                   name="eventId"
                   render={({ field }) => (
-                    <FormItem className="flex flex-col">
+                    <FormItem>
                       <FormLabel>3. Select the Event</FormLabel>
-                      <Combobox
-                          options={eventOptions}
-                          value={field.value}
-                          onChange={field.onChange}
-                          placeholder="Search for an event..."
-                          emptyMessage="No event found."
-                      />
+                       <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select an event" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {mockEvents.map((event) => (
+                            <SelectItem key={event.id} value={event.id}>
+                              {event.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                <Button type="submit" className="w-full md:col-span-2" size="lg">Submit Attendance</Button>
+                <Button type="submit" className="w-full" size="lg">Submit Attendance</Button>
               </form>
             </Form>
           </CardContent>

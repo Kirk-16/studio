@@ -1,4 +1,4 @@
-import type { Scholar, Event, School } from './types';
+import type { Scholar, Event, School, AttendanceLog } from './types';
 
 export const schools: School[] = ['STI', 'SDC', 'SEC', 'SNSU', 'SPUS', 'SJTIT', 'NEMCO'];
 
@@ -18,4 +18,8 @@ export const mockEvents: Event[] = [
     { id: 'evt2', name: 'Community Pantry Volunteering', date: new Date('2024-08-20T09:00:00'), duration: '9:00 AM - 3:00 PM', minHours: 3, maxHours: 6 },
     { id: 'evt3', name: 'Scholarship Program Orientation', date: new Date('2024-09-01T13:00:00'), duration: '1:00 PM - 5:00 PM', minHours: 2, maxHours: 4 },
     { id: 'evt4', name: 'Tree Planting at Mabua', date: new Date('2024-09-10T07:00:00'), duration: '7:00 AM - 11:00 AM', minHours: 2, maxHours: 4 },
+];
+
+export const mockAttendanceLogs: AttendanceLog[] = [
+    // Pre-existing logs can be added here for testing
 ];

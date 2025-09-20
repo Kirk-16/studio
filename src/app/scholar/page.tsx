@@ -8,7 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { schools, mockEvents, mockScholars } from '@/lib/data';
+import { schools, mockEvents, mockScholars, mockAttendanceLogs } from '@/lib/data';
+import type { AttendanceLog } from '@/lib/types';
 import Link from 'next/link';
 import { ArrowLeft, BookUser } from 'lucide-react';
 import React from 'react';
@@ -23,6 +24,8 @@ type AttendanceFormValues = z.infer<typeof attendanceFormSchema>;
 
 export default function ScholarPage() {
   const { toast } = useToast();
+  const [attendanceLogs, setAttendanceLogs] = React.useState<AttendanceLog[]>(mockAttendanceLogs);
+
   const form = useForm<AttendanceFormValues>({
     resolver: zodResolver(attendanceFormSchema),
     defaultValues: {
@@ -49,12 +52,50 @@ export default function ScholarPage() {
   function onSubmit(data: AttendanceFormValues) {
     const scholar = mockScholars.find(s => s.id === data.scholarId);
     const event = mockEvents.find(e => e.id === data.eventId);
+    if (!scholar || !event) return;
 
-    // This is a mock submission. In a real app, you'd check if the user is logging in or out.
-    toast({
-      title: 'Attendance Logged!',
-      description: `${scholar?.firstName} ${scholar?.surname} has successfully logged in for ${event?.name}.`,
-    });
+    const activeLog = attendanceLogs.find(
+      (log) => log.scholarId === data.scholarId && log.eventId === data.eventId && !log.logOutTime
+    );
+
+    if (activeLog) {
+      // Scholar is logging out
+      const logOutTime = new Date();
+      const logInTime = new Date(activeLog.logInTime);
+      const hours = (logOutTime.getTime() - logInTime.getTime()) / 1000 / 60 / 60;
+      
+      // Clamp hours between event's min and max
+      const hoursEarned = Math.max(event.minHours, Math.min(hours, event.maxHours));
+
+      setAttendanceLogs(prev => 
+        prev.map(log => 
+          log.id === activeLog.id ? { ...log, logOutTime, hoursEarned: parseFloat(hoursEarned.toFixed(2)) } : log
+        )
+      );
+
+      // In a real app, you would also update the scholar's total accumulated hours
+      
+      toast({
+        title: 'Successfully Logged Out!',
+        description: `${scholar.firstName} earned an estimated ${hoursEarned.toFixed(2)} hours for ${event.name}.`,
+      });
+
+    } else {
+      // Scholar is logging in
+      const newLog: AttendanceLog = {
+        id: `log-${Date.now()}`,
+        scholarId: data.scholarId,
+        eventId: data.eventId,
+        logInTime: new Date(),
+        hoursEarned: 0,
+      };
+      setAttendanceLogs(prev => [...prev, newLog]);
+      toast({
+        title: 'Successfully Logged In!',
+        description: `${scholar.firstName} ${scholar.surname} has logged in for ${event.name}.`,
+      });
+    }
+
     form.reset();
   }
 

@@ -10,7 +10,6 @@ import {
   SidebarMenuButton,
   SidebarFooter,
   SidebarInset,
-  SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { Home, Users, Calendar } from 'lucide-react';
 import Link from 'next/link';
@@ -65,12 +64,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </SidebarMenu>
             </SidebarContent>
             <SidebarFooter>
-            <SidebarMenuButton asChild tooltip="Back to Home">
-                <Link href="/">
-                    <Home />
-                    <span>Back to Home</span>
-                </Link>
-            </SidebarMenuButton>
+                <SidebarMenu>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton asChild tooltip="Back to Home">
+                            <Link href="/">
+                                <Home />
+                                <span>Back to Home</span>
+                            </Link>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                </SidebarMenu>
             </SidebarFooter>
         </Sidebar>
         <SidebarInset>

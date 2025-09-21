@@ -37,13 +37,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MoreHorizontal, PlusCircle, Search, Sparkles } from 'lucide-react';
 import type { Scholar, School } from '@/lib/types';
-import { schools } from '@/lib/data';
+import { schools, addScholar, updateScholar, deleteScholar } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useRouter } from 'next/navigation';
+
 
 const scholarFormSchema = z.object({
     id: z.string().optional(),
@@ -52,7 +54,7 @@ const scholarFormSchema = z.object({
     middleName: z.string().min(1, "Middle name is required"),
     school: z.string({ required_error: 'Please select a school.' }),
     scholarCode: z.string().min(1, "Scholar code is required"),
-    accumulatedHours: z.number().min(0, "Hours must be non-negative"),
+    accumulatedHours: z.coerce.number().min(0, "Hours must be non-negative"),
 });
 
 type ScholarFormValues = z.infer<typeof scholarFormSchema>;
@@ -64,6 +66,7 @@ export function ScholarDataTable({ data }: { data: Scholar[] }) {
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = React.useState(false);
   const [selectedScholar, setSelectedScholar] = React.useState<Scholar | null>(null);
   const { toast } = useToast();
+  const router = useRouter();
 
   const form = useForm<ScholarFormValues>({
     resolver: zodResolver(scholarFormSchema),
@@ -79,7 +82,7 @@ export function ScholarDataTable({ data }: { data: Scholar[] }) {
 
   const handleAdd = () => {
     setSelectedScholar(null);
-    form.reset({ 
+    form.reset({
         surname: '',
         firstName: '',
         middleName: '',
@@ -104,36 +107,45 @@ export function ScholarDataTable({ data }: { data: Scholar[] }) {
     setIsDeleteAlertOpen(true);
   }
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if(!selectedScholar) return;
-    // Mock deletion
-    setScholars(prev => prev.filter(s => s.id !== selectedScholar.id));
-    toast({ title: 'Success', description: 'Scholar profile deleted.' });
+    try {
+        await deleteScholar(selectedScholar.id);
+        toast({ title: 'Success', description: 'Scholar profile deleted.' });
+        router.refresh(); // Re-fetch data from server
+    } catch(e) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Failed to delete scholar.'});
+    }
     setIsDeleteAlertOpen(false);
     setSelectedScholar(null);
   }
 
-  const onSubmit = (values: ScholarFormValues) => {
-    if (selectedScholar) { // Editing
-        setScholars(prev => prev.map(s => s.id === selectedScholar.id ? { ...selectedScholar, ...values, school: values.school as School } : s));
-        toast({ title: 'Success', description: 'Scholar profile updated.' });
-    } else { // Adding
-        const newScholar: Scholar = { ...values, id: `sch-${Date.now()}`, school: values.school as School };
-        setScholars(prev => [...prev, newScholar].sort((a,b) => a.surname.localeCompare(b.surname)));
-        toast({ title: 'Success', description: 'New scholar added.' });
+  const onSubmit = async (values: ScholarFormValues) => {
+    try {
+        if (selectedScholar) { // Editing
+            await updateScholar(selectedScholar.id, { ...values, school: values.school as School });
+            toast({ title: 'Success', description: 'Scholar profile updated.' });
+        } else { // Adding
+            await addScholar({ ...values, school: values.school as School });
+            toast({ title: 'Success', description: 'New scholar added.' });
+        }
+        setIsFormOpen(false);
+        router.refresh(); // Re-fetch data from server
+    } catch(e) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Failed to save scholar.'});
     }
-    setIsFormOpen(false);
   };
 
-  const generateScholarCode = () => {
+  const generateScholarCode = async () => {
     const school = form.getValues("school") as School;
     if (!school) {
         toast({ variant: 'destructive', title: 'Error', description: 'Please select a school first.' });
         return;
     }
     const year = new Date().getFullYear();
-    // Note: In a real app, you might want a more robust way to get all scholars, not just the currently filtered ones.
-    const schoolScholars = scholars.filter(s => s.school === school);
+    // In a real app, you would fetch all scholars to get a reliable count
+    const allScholars = await getScholars();
+    const schoolScholars = allScholars.filter(s => s.school === school);
     const newId = (schoolScholars.length + 1).toString().padStart(3, '0');
     const code = `${school}-${year}-${newId}`;
     form.setValue('scholarCode', code);
@@ -250,7 +262,7 @@ export function ScholarDataTable({ data }: { data: Scholar[] }) {
           </Form>
         </DialogContent>
       </Dialog>
-      
+
       <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
         <AlertDialogContent>
             <AlertDialogHeader>

@@ -1,25 +1,123 @@
 import type { Scholar, Event, School, AttendanceLog } from './types';
+import { db } from './firebase';
+import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, query, where, Timestamp } from 'firebase/firestore';
 
 export const schools: School[] = ['STI', 'SDC', 'SEC', 'SNSU', 'SPUS', 'SJTIT', 'NEMCO'];
 
-export const mockScholars: Scholar[] = [
-  { id: '1', scholarCode: 'STI-2023-001', school: 'STI', firstName: 'Juan', middleName: 'Reyes', surname: 'Dela Cruz', accumulatedHours: 120 },
-  { id: '2', scholarCode: 'SDC-2023-001', school: 'SDC', firstName: 'Maria', middleName: 'Santos', surname: 'Clara', accumulatedHours: 85.5 },
-  { id: '3', scholarCode: 'SEC-2024-001', school: 'SEC', firstName: 'Pedro', middleName: 'Gonzales', surname: 'Santos', accumulatedHours: 42 },
-  { id: '4', scholarCode: 'SNSU-2023-002', school: 'SNSU', firstName: 'Ana', middleName: 'Lopez', surname: 'Garcia', accumulatedHours: 150 },
-  { id: '5', scholarCode: 'SPUS-2024-002', school: 'SPUS', firstName: 'Jose', middleName: 'Martinez', surname: 'Rodriguez', accumulatedHours: 20 },
-  { id: '6', scholarCode: 'SJTIT-2023-003', school: 'SJTIT', firstName: 'Luz', middleName: 'Cruz', surname: 'Hernandez', accumulatedHours: 98 },
-  { id: '7', scholarCode: 'NEMCO-2024-003', school: 'NEMCO', firstName: 'Rizal', middleName: 'Bonifacio', surname: 'Mabini', accumulatedHours: 73.5 },
-  { id: '8', scholarCode: 'STI-2023-004', school: 'STI', firstName: 'Andres', middleName: 'Luna', surname: 'Aguinaldo', accumulatedHours: 66 },
-];
+// Scholar Functions
+export async function getScholars(): Promise<Scholar[]> {
+  const scholarsCol = collection(db, 'scholars');
+  const scholarSnapshot = await getDocs(scholarsCol);
+  const scholarList = scholarSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Scholar));
+  return scholarList.sort((a, b) => a.surname.localeCompare(b.surname));
+}
 
-export const mockEvents: Event[] = [
-    { id: 'evt1', name: 'Coastal Cleanup 2024', date: new Date('2024-08-15T08:00:00'), duration: '8:00 AM - 12:00 PM', minHours: 2, maxHours: 4 },
-    { id: 'evt2', name: 'Community Pantry Volunteering', date: new Date('2024-08-20T09:00:00'), duration: '9:00 AM - 3:00 PM', minHours: 3, maxHours: 6 },
-    { id: 'evt3', name: 'Scholarship Program Orientation', date: new Date('2024-09-01T13:00:00'), duration: '1:00 PM - 5:00 PM', minHours: 2, maxHours: 4 },
-    { id: 'evt4', name: 'Tree Planting at Mabua', date: new Date('2024-09-10T07:00:00'), duration: '7:00 AM - 11:00 AM', minHours: 2, maxHours: 4 },
-];
+export async function addScholar(scholar: Omit<Scholar, 'id'>): Promise<string> {
+    const scholarsCol = collection(db, 'scholars');
+    const docRef = await addDoc(scholarsCol, scholar);
+    return docRef.id;
+}
 
-export const mockAttendanceLogs: AttendanceLog[] = [
-    // Pre-existing logs can be added here for testing
-];
+export async function updateScholar(id: string, scholar: Partial<Scholar>): Promise<void> {
+    const scholarDoc = doc(db, 'scholars', id);
+    await updateDoc(scholarDoc, scholar);
+}
+
+export async function deleteScholar(id: string): Promise<void> {
+    const scholarDoc = doc(db, 'scholars', id);
+    await deleteDoc(scholarDoc);
+}
+
+
+// Event Functions
+function eventFromDoc(doc: any): Event {
+    const data = doc.data();
+    return {
+        id: doc.id,
+        ...data,
+        date: (data.date as Timestamp).toDate(),
+    } as Event;
+}
+
+
+export async function getEvents(): Promise<Event[]> {
+  const eventsCol = collection(db, 'events');
+  const eventSnapshot = await getDocs(eventsCol);
+  const eventList = eventSnapshot.docs.map(eventFromDoc);
+  return eventList.sort((a,b) => (a.date as Date).getTime() - (b.date as Date).getTime());
+}
+
+export async function addEvent(event: Omit<Event, 'id'>): Promise<string> {
+    const eventsCol = collection(db, 'events');
+    const docRef = await addDoc(eventsCol, {
+        ...event,
+        date: Timestamp.fromDate(event.date as Date)
+    });
+    return docRef.id;
+}
+
+export async function updateEvent(id: string, event: Partial<Event>): Promise<void> {
+    const eventDoc = doc(db, 'events', id);
+    const updateData: any = { ...event };
+    if (event.date && event.date instanceof Date) {
+        updateData.date = Timestamp.fromDate(event.date);
+    }
+    await updateDoc(eventDoc, updateData);
+}
+
+export async function deleteEvent(id: string): Promise<void> {
+    const eventDoc = doc(db, 'events', id);
+    await deleteDoc(eventDoc);
+}
+
+
+// AttendanceLog Functions
+function logFromDoc(doc: any): AttendanceLog {
+    const data = doc.data();
+    return {
+        id: doc.id,
+        ...data,
+        logInTime: (data.logInTime as Timestamp).toDate(),
+        logOutTime: data.logOutTime ? (data.logOutTime as Timestamp).toDate() : undefined,
+    } as AttendanceLog;
+}
+
+export async function getAttendanceLogs(): Promise<AttendanceLog[]> {
+    const logsCol = collection(db, 'attendanceLogs');
+    const logSnapshot = await getDocs(logsCol);
+    return logSnapshot.docs.map(logFromDoc);
+}
+
+export async function getActiveLog(scholarId: string, eventId: string): Promise<AttendanceLog | null> {
+    const logsCol = collection(db, 'attendanceLogs');
+    const q = query(logsCol, where('scholarId', '==', scholarId), where('eventId', '==', eventId), where('logOutTime', '==', null));
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) {
+        return null;
+    }
+    return logFromDoc(snapshot.docs[0]);
+}
+
+
+export async function addAttendanceLog(log: Omit<AttendanceLog, 'id' | 'hoursEarned'>): Promise<string> {
+    const logsCol = collection(db, 'attendanceLogs');
+    const docRef = await addDoc(logsCol, {
+        ...log,
+        logInTime: Timestamp.fromDate(log.logInTime as Date),
+        hoursEarned: 0,
+        logOutTime: null,
+    });
+    return docRef.id;
+}
+
+export async function updateAttendanceLog(id: string, log: Partial<AttendanceLog>): Promise<void> {
+    const logDoc = doc(db, 'attendanceLogs', id);
+    const updateData: any = { ...log };
+    if (log.logInTime && log.logInTime instanceof Date) {
+        updateData.logInTime = Timestamp.fromDate(log.logInTime);
+    }
+    if (log.logOutTime && log.logOutTime instanceof Date) {
+        updateData.logOutTime = Timestamp.fromDate(log.logOutTime);
+    }
+    await updateDoc(logDoc, updateData);
+}

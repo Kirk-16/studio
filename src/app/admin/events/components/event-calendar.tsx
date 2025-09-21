@@ -17,6 +17,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Input } from '@/components/ui/input';
 import { Calendar } from '@/components/ui/calendar';
+import { addEvent, updateEvent, deleteEvent } from '@/lib/data';
+import { useRouter } from 'next/navigation';
+import { Timestamp } from 'firebase/firestore';
 
 const eventFormSchema = z.object({
   id: z.string().optional(),
@@ -39,8 +42,13 @@ export function EventCalendar({ initialEvents }: { initialEvents: Event[] }) {
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = React.useState(false);
   const [selectedEvent, setSelectedEvent] = React.useState<Event | null>(null);
   const { toast } = useToast();
+  const router = useRouter();
 
   const form = useForm<EventFormValues>({ resolver: zodResolver(eventFormSchema), defaultValues: { minHours: 0, maxHours: 0 } });
+
+  React.useEffect(() => {
+    setEvents(initialEvents);
+  }, [initialEvents]);
 
   const start = startOfMonth(currentMonth);
   const end = endOfMonth(currentMonth);
@@ -59,7 +67,10 @@ export function EventCalendar({ initialEvents }: { initialEvents: Event[] }) {
   
   const handleEdit = (event: Event) => {
     setSelectedEvent(event);
-    form.reset(event);
+    form.reset({
+      ...event,
+      date: (event.date as Timestamp | Date) instanceof Timestamp ? (event.date as Timestamp).toDate() : (event.date as Date)
+    });
     setIsFormOpen(true);
   };
 
@@ -68,24 +79,33 @@ export function EventCalendar({ initialEvents }: { initialEvents: Event[] }) {
     setIsDeleteAlertOpen(true);
   }
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if(!selectedEvent) return;
-    setEvents(prev => prev.filter(e => e.id !== selectedEvent.id));
-    toast({ title: 'Success', description: 'Event deleted.' });
+    try {
+        await deleteEvent(selectedEvent.id);
+        toast({ title: 'Success', description: 'Event deleted.' });
+        router.refresh();
+    } catch(e) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Failed to delete event.' });
+    }
     setIsDeleteAlertOpen(false);
     setSelectedEvent(null);
   }
 
-  const onSubmit = (values: EventFormValues) => {
-    if (selectedEvent) { // Editing
-        setEvents(prev => prev.map(e => e.id === selectedEvent.id ? { ...selectedEvent, ...values } : e));
-        toast({ title: 'Success', description: 'Event details updated.' });
-    } else { // Adding
-        const newEvent: Event = { ...values, id: `evt-${Date.now()}` };
-        setEvents(prev => [...prev, newEvent]);
-        toast({ title: 'Success', description: 'New event created.' });
+  const onSubmit = async (values: EventFormValues) => {
+    try {
+        if (selectedEvent) { // Editing
+            await updateEvent(selectedEvent.id, values);
+            toast({ title: 'Success', description: 'Event details updated.' });
+        } else { // Adding
+            await addEvent(values);
+            toast({ title: 'Success', description: 'New event created.' });
+        }
+        setIsFormOpen(false);
+        router.refresh();
+    } catch(e) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Failed to save event.' });
     }
-    setIsFormOpen(false);
   };
 
   return (
@@ -108,7 +128,7 @@ export function EventCalendar({ initialEvents }: { initialEvents: Event[] }) {
         <div className="grid grid-cols-7">
           {Array.from({ length: startingDayIndex }).map((_, i) => <div key={`empty-${i}`} className="border-r border-b h-32"></div>)}
           {days.map(day => {
-            const dayEvents = events.filter(event => isSameDay(event.date, day));
+            const dayEvents = events.filter(event => isSameDay(event.date as Date, day));
             return (
               <div key={day.toString()} className={cn("border-r border-b p-2 h-32 flex flex-col", { 'bg-blue-50 dark:bg-blue-900/20': isToday(day) })}>
                 <time

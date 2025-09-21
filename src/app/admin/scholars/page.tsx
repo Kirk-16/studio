@@ -1,20 +1,7 @@
-import { mockScholars, schools } from '@/lib/data';
+import { getScholars, schools } from '@/lib/data';
 import type { Scholar } from '@/lib/types';
 import { ScholarDataTable } from './components/scholar-data-table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card } from '@/components/ui/card';
-
-async function getScholars(): Promise<Scholar[]> {
-  // In a real app, you'd fetch this from a database
-  return new Promise((resolve) =>
-    setTimeout(() => {
-      const sortedScholars = [...mockScholars].sort((a, b) =>
-        a.surname.localeCompare(b.surname)
-      );
-      resolve(sortedScholars);
-    }, 500)
-  );
-}
 
 export default async function ScholarsPage() {
   const scholars = await getScholars();

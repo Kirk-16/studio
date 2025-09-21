@@ -1,3 +1,5 @@
+import type { Timestamp } from 'firebase/firestore';
+
 export type School = 'STI' | 'SDC' | 'SEC' | 'SNSU' | 'SPUS' | 'SJTIT' | 'NEMCO';
 
 export interface Scholar {
@@ -13,7 +15,7 @@ export interface Scholar {
 export interface Event {
   id: string;
   name: string;
-  date: Date;
+  date: Date | Timestamp;
   duration: string;
   minHours: number;
   maxHours: number;
@@ -23,7 +25,7 @@ export interface AttendanceLog {
   id: string;
   scholarId: string;
   eventId: string;
-  logInTime: Date;
-  logOutTime?: Date;
+  logInTime: Date | Timestamp;
+  logOutTime?: Date | Timestamp;
   hoursEarned: number;
 }

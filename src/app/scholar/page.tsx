@@ -8,11 +8,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { schools, mockEvents, mockScholars, mockAttendanceLogs } from '@/lib/data';
-import type { AttendanceLog } from '@/lib/types';
+import { schools, getScholars, getEvents, getActiveLog, addAttendanceLog, updateAttendanceLog, updateScholar } from '@/lib/data';
+import type { Scholar, Event } from '@/lib/types';
 import Link from 'next/link';
 import { ArrowLeft, BookUser } from 'lucide-react';
 import React from 'react';
+import { Timestamp } from 'firebase/firestore';
+
 
 const attendanceFormSchema = z.object({
   school: z.string({ required_error: 'Please select a school.' }).min(1, 'Please select a school.'),
@@ -24,7 +26,8 @@ type AttendanceFormValues = z.infer<typeof attendanceFormSchema>;
 
 export default function ScholarPage() {
   const { toast } = useToast();
-  const [attendanceLogs, setAttendanceLogs] = React.useState<AttendanceLog[]>(mockAttendanceLogs);
+  const [allScholars, setAllScholars] = React.useState<Scholar[]>([]);
+  const [allEvents, setAllEvents] = React.useState<Event[]>([]);
 
   const form = useForm<AttendanceFormValues>({
     resolver: zodResolver(attendanceFormSchema),
@@ -35,68 +38,83 @@ export default function ScholarPage() {
     },
   });
 
+  React.useEffect(() => {
+    async function fetchData() {
+      const scholars = await getScholars();
+      const events = await getEvents();
+      setAllScholars(scholars);
+      setAllEvents(events);
+    }
+    fetchData();
+  }, []);
+
   const selectedSchool = form.watch('school');
 
   const filteredScholars = React.useMemo(() => {
     if (!selectedSchool) {
         return [];
     }
-    return mockScholars.filter(scholar => scholar.school === selectedSchool);
-  }, [selectedSchool]);
+    return allScholars.filter(scholar => scholar.school === selectedSchool);
+  }, [selectedSchool, allScholars]);
 
   React.useEffect(() => {
     form.resetField('scholarId');
   }, [selectedSchool, form]);
 
 
-  function onSubmit(data: AttendanceFormValues) {
-    const scholar = mockScholars.find(s => s.id === data.scholarId);
-    const event = mockEvents.find(e => e.id === data.eventId);
-    if (!scholar || !event) return;
+  async function onSubmit(data: AttendanceFormValues) {
+    const scholar = allScholars.find(s => s.id === data.scholarId);
+    const event = allEvents.find(e => e.id === data.eventId);
+    if (!scholar || !event) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Invalid scholar or event selected.'});
+        return;
+    };
 
-    const activeLog = attendanceLogs.find(
-      (log) => log.scholarId === data.scholarId && log.eventId === data.eventId && !log.logOutTime
-    );
+    try {
+        const activeLog = await getActiveLog(data.scholarId, data.eventId);
 
-    if (activeLog) {
-      // Scholar is logging out
-      const logOutTime = new Date();
-      const logInTime = new Date(activeLog.logInTime);
-      const hours = (logOutTime.getTime() - logInTime.getTime()) / 1000 / 60 / 60;
-      
-      // Clamp hours between event's min and max
-      const hoursEarned = Math.max(event.minHours, Math.min(hours, event.maxHours));
+        if (activeLog) {
+          // Scholar is logging out
+          const logOutTime = new Date();
+          const logInTime = (activeLog.logInTime as Timestamp).toDate();
+          const hours = (logOutTime.getTime() - logInTime.getTime()) / 1000 / 60 / 60;
+          
+          // Clamp hours between event's min and max
+          const hoursEarned = Math.max(event.minHours, Math.min(hours, event.maxHours));
 
-      setAttendanceLogs(prev => 
-        prev.map(log => 
-          log.id === activeLog.id ? { ...log, logOutTime, hoursEarned: parseFloat(hoursEarned.toFixed(2)) } : log
-        )
-      );
+          await updateAttendanceLog(activeLog.id, {
+            logOutTime: logOutTime,
+            hoursEarned: parseFloat(hoursEarned.toFixed(2))
+          });
 
-      // In a real app, you would also update the scholar's total accumulated hours
-      
-      toast({
-        title: 'Successfully Logged Out!',
-        description: `${scholar.firstName} earned an estimated ${hoursEarned.toFixed(2)} hours for ${event.name}.`,
-      });
+          // Update scholar's total accumulated hours
+          const newTotalHours = scholar.accumulatedHours + hoursEarned;
+          await updateScholar(scholar.id, { accumulatedHours: newTotalHours });
+          
+          toast({
+            title: 'Successfully Logged Out!',
+            description: `${scholar.firstName} earned an estimated ${hoursEarned.toFixed(2)} hours for ${event.name}. Total hours: ${newTotalHours.toFixed(2)}`,
+          });
 
-    } else {
-      // Scholar is logging in
-      const newLog: AttendanceLog = {
-        id: `log-${Date.now()}`,
-        scholarId: data.scholarId,
-        eventId: data.eventId,
-        logInTime: new Date(),
-        hoursEarned: 0,
-      };
-      setAttendanceLogs(prev => [...prev, newLog]);
-      toast({
-        title: 'Successfully Logged In!',
-        description: `${scholar.firstName} ${scholar.surname} has logged in for ${event.name}.`,
-      });
+        } else {
+          // Scholar is logging in
+          await addAttendanceLog({
+            scholarId: data.scholarId,
+            eventId: data.eventId,
+            logInTime: new Date(),
+          });
+
+          toast({
+            title: 'Successfully Logged In!',
+            description: `${scholar.firstName} ${scholar.surname} has logged in for ${event.name}.`,
+          });
+        }
+
+        form.reset();
+    } catch (e) {
+        console.error(e);
+        toast({ variant: 'destructive', title: 'Error', description: 'An error occurred while submitting attendance.' });
     }
-
-    form.reset();
   }
 
   return (
@@ -177,7 +195,7 @@ export default function ScholarPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {mockEvents.map((event) => (
+                          {allEvents.map((event) => (
                             <SelectItem key={event.id} value={event.id}>
                               {event.name}
                             </SelectItem>
